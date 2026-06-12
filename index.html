@@ -172,7 +172,6 @@
   function rate(n){ return rf.format(n||0); }
   function num(id){ var v = parseFloat($(id).value.replace(',','.')); return isNaN(v)?0:v; }
   function dmy(s){ if(!s) return ''; var p=s.split('-'); return p[2]+'.'+p[1]; }
-  function palWord(n){ n=Math.abs(Math.round(n)); var d=n%10,h=n%100; if(h>=11&&h<=14) return 'паллет'; if(d===1) return 'паллета'; if(d>=2&&d<=4) return 'паллеты'; return 'паллет'; }
 
   function buildDist(){
     var box = $('f-dist'); box.innerHTML='';
@@ -244,7 +243,7 @@
       var bi=document.querySelector('[data-boxesin="'+i+'"]');
       var b=bi?(parseFloat(bi.value)||0):p*BOX_PER_PALLET; sumB+=b;
       var city=ROUTES[route].cities[i][0];
-      html+='<div class="crow"><span class="k">📍 '+city+'</span><span class="v">'+nf.format(p)+' '+palWord(p)+' <span class="m">· '+money(b)+' кор.</span></span></div>';
+      html+='<div class="crow"><span class="k">📍 '+city+'</span><span class="v">'+nf.format(p)+'п. / '+money(b)+' кор.</span></div>';
     });
     $('c-dist').innerHTML = html;
     var chk=$('dist-check');
