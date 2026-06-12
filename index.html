@@ -90,7 +90,7 @@
       <div class="grid">
         <div><label>Дата выехала</label><input type="date" id="f-out" value="2026-04-13"></div>
         <div><label>Дата заехала</label><input type="date" id="f-in" value="2026-04-16"></div>
-        <div><label>Поддоны</label><input type="number" id="f-pallets" value="32" min="0"></div>
+        <div><label>Паллеты</label><input type="number" id="f-pallets" value="32" min="0"></div>
         <div><label>Коробок (авто ×160)</label><input type="number" id="f-boxes" value="5120" min="0"><div class="hint">правится вручную</div></div>
         <div><label>Цена за кг, ₽</label><input type="number" id="f-price" value="100" step="0.01"></div>
         <div><label>Кэшбек, %</label><input type="number" id="f-cashback" value="6.5" step="0.1"></div>
@@ -100,7 +100,7 @@
         <div><label>Курс доков, ₸/₽</label><input type="number" id="f-doki-rate" value="6" step="0.01"></div>
       </div>
 
-      <h2 style="margin-top:18px">Распределение поддонов</h2>
+      <h2 style="margin-top:18px">Распределение по городам</h2>
       <div id="f-dist"></div>
       <div class="dist-check" id="dist-check"></div>
     </div>
@@ -111,11 +111,11 @@
         <div class="head">
           <span style="font-size:22px">🚚</span>
           <div>
-            <div class="t">Себестоимость фуры</div>
+            <div class="t">Приходная накладная на грибы шампиньоны</div>
             <div class="r" id="c-route">Воронеж → Алмата · 13–16.04.2026</div>
           </div>
         </div>
-        <div class="crow"><span class="k">Поддоны</span><span class="v"><span id="c-pallets">32</span> <span class="m">· <span id="c-boxes">5 120</span> кор.</span></span></div>
+        <div class="crow"><span class="k">Количество</span><span class="v"><span id="c-pallets">32</span>п. / <span id="c-boxes">5 120</span> кор.</span></div>
         <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> ₽</span></div>
         <div class="crow"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
         <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">2 000 000</span> ₸</span></div>
@@ -128,7 +128,7 @@
           <span class="l">Себестоимость / коробка<small><span id="c-total3">0</span> ÷ <span id="c-boxes2">5 120</span> ящиков</small></span>
           <span class="big"><span id="c-sebest">0</span> ₸</span>
         </div>
-        <div class="dist-title">Распределение поддонов · <span id="c-dist-route">на Алмату</span></div>
+        <div class="dist-title">Распределение по городам · <span id="c-dist-route">на Алмату</span></div>
         <div id="c-dist"></div>
         <div class="foot"><span>Калькулятор фуры · грибы</span><span id="c-date">12.06.2026</span></div>
       </div>
@@ -172,11 +172,12 @@
   function rate(n){ return rf.format(n||0); }
   function num(id){ var v = parseFloat($(id).value.replace(',','.')); return isNaN(v)?0:v; }
   function dmy(s){ if(!s) return ''; var p=s.split('-'); return p[2]+'.'+p[1]; }
+  function palWord(n){ n=Math.abs(Math.round(n)); var d=n%10,h=n%100; if(h>=11&&h<=14) return 'паллет'; if(d===1) return 'паллета'; if(d>=2&&d<=4) return 'паллеты'; return 'паллет'; }
 
   function buildDist(){
     var box = $('f-dist'); box.innerHTML='';
     var head = document.createElement('div'); head.className='dist-head';
-    head.innerHTML = '<span>город</span><span>поддоны</span><span>коробки</span>';
+    head.innerHTML = '<span>город</span><span>паллеты</span><span>коробки</span>';
     box.appendChild(head);
     ROUTES[route].cities.forEach(function(c,i){
       var row = document.createElement('div'); row.className='dist-row';
@@ -243,12 +244,12 @@
       var bi=document.querySelector('[data-boxesin="'+i+'"]');
       var b=bi?(parseFloat(bi.value)||0):p*BOX_PER_PALLET; sumB+=b;
       var city=ROUTES[route].cities[i][0];
-      html+='<div class="crow"><span class="k">📍 '+city+'</span><span class="v">'+nf.format(p)+' под. <span class="m">· '+money(b)+' кор.</span></span></div>';
+      html+='<div class="crow"><span class="k">📍 '+city+'</span><span class="v">'+nf.format(p)+' '+palWord(p)+' <span class="m">· '+money(b)+' кор.</span></span></div>';
     });
     $('c-dist').innerHTML = html;
     var chk=$('dist-check');
     var okAll = (sumP===pallets) && (sumB===boxes);
-    chk.textContent='Роздано '+nf.format(sumP)+' / '+nf.format(pallets)+' под. · '+money(sumB)+' / '+money(boxes)+' кор.';
+    chk.textContent='Роздано '+nf.format(sumP)+' / '+nf.format(pallets)+' пал. · '+money(sumB)+' / '+money(boxes)+' кор.';
     chk.className='dist-check '+(okAll?'ok':'bad');
 
     LAST = { route:route, out:out, inn:inn, pallets:pallets, boxes:boxes,
@@ -294,7 +295,7 @@
     es.slice().reverse().forEach(function(e){
       var d = (e.out?dmy(e.out):'') + (e.inn?'–'+dmy(e.inn):'');
       html += '<div class="hrow"><span class="hd">'+d+'</span>'+
-        '<span class="hm">'+nf.format(e.pallets)+' под · '+money(e.boxes)+' кор</span>'+
+        '<span class="hm">'+nf.format(e.pallets)+' пал · '+money(e.boxes)+' кор</span>'+
         '<span class="hs">'+money(e.sebest)+' ₸</span>'+
         '<button class="hx" data-del="'+e.id+'" title="удалить">✕</button></div>';
     });
@@ -349,9 +350,9 @@
   $('btn-share').addEventListener('click', function(){
     if(!window.htmlToImage){ alert('Нет интернета — библиотека PNG не загрузилась. Подключись к сети и попробуй снова.'); return; }
     htmlToImage.toBlob($('card'),{pixelRatio:2,backgroundColor:'#ffffff'}).then(function(blob){
-      var file = new File([blob],'sebestoimost-fury.png',{type:'image/png'});
+      var file = new File([blob],'prihodnaya-nakladnaya.png',{type:'image/png'});
       if(navigator.canShare && navigator.canShare({files:[file]})){
-        navigator.share({files:[file], title:'Себестоимость фуры'}).catch(function(){});
+        navigator.share({files:[file], title:'Приходная накладная'}).catch(function(){});
       } else {
         var a=document.createElement('a'); a.download='sebestoimost-fury.png'; a.href=URL.createObjectURL(blob); a.click();
       }
