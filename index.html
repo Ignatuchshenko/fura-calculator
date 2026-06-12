@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Калькулятор себестоимости фуры · грибы</title>
+<style>
+  :root{
+    --bg:#f4f5f3; --panel:#ffffff; --ink:#1c1c1a; --muted:#6b6b66; --faint:#9a9a93;
+    --line:#e6e6e1; --accent:#0f6e56; --accent-bg:#e1f5ee; --accent-line:#bfe6d7;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:15px;line-height:1.5;padding:24px 16px 60px}
+  h1{font-size:20px;font-weight:600;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+  .wrap{max-width:980px;margin:0 auto}
+  .layout{display:grid;grid-template-columns:1fr 470px;gap:22px;align-items:start}
+  @media(max-width:880px){.layout{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 14px;font-weight:600}
+  label{display:block;font-size:12px;color:var(--muted);margin:0 0 4px}
+  input,.seg button{font-family:inherit;font-size:15px;color:var(--ink)}
+  input{width:100%;height:38px;padding:0 11px;border:1px solid var(--line);border-radius:9px;background:#fff;outline:none}
+  input:focus{border-color:var(--accent)}
+  input[type=date]{padding:0 9px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 12px}
+  .grid .full{grid-column:1 / -1}
+  .seg{display:flex;gap:8px;margin:0 0 16px}
+  .seg button{flex:1;height:40px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;font-weight:500}
+  .seg button.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+  .dist-row{display:grid;grid-template-columns:1fr 96px;gap:10px;align-items:center;margin-bottom:8px}
+  .dist-row .city{font-size:14px}
+  .dist-row .boxes{font-size:12px;color:var(--muted);text-align:right}
+  .dist-check{font-size:12px;margin-top:6px}
+  .ok{color:var(--accent)} .bad{color:#c0392b}
+  .hint{font-size:11px;color:var(--faint);margin-top:3px}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .btns button{flex:1;height:42px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:14px;font-weight:500;color:var(--ink)}
+  .btns .primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* ---- card ---- */
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+  .card .head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .card .head .t{font-size:17px;font-weight:600}
+  .card .head .r{font-size:13px;color:var(--muted)}
+  .crow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .crow .k{font-size:14px;color:var(--muted)}
+  .crow .v{font-size:14px;font-weight:600;text-align:right}
+  .crow .m{color:var(--muted);font-weight:400}
+  .calc{font-size:14px;line-height:1.85;margin:14px 0 0}
+  .calc .lab{color:var(--muted)}
+  .calc b{font-weight:600}
+  .sebest{background:var(--accent-bg);border:1px solid var(--accent-line);border-radius:11px;padding:15px 18px;margin:14px 0;display:flex;justify-content:space-between;align-items:center}
+  .sebest .l{font-size:14px;color:var(--accent)}
+  .sebest .l small{display:block;font-size:12px;opacity:.8}
+  .sebest .big{font-size:27px;font-weight:700;color:var(--accent)}
+  .dist-title{font-size:13px;color:var(--muted);margin:2px 0 2px}
+  .foot{border-top:1px solid var(--line);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;color:var(--faint);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Калькулятор себестоимости фуры</h1>
+  <p class="sub">Грибы · импорт из Воронежа. Вбей вводные — получишь себестоимость/коробку и картинку.</p>
+
+  <div class="layout">
+    <!-- ФОРМА -->
+    <div class="panel">
+      <h2>Маршрут</h2>
+      <div class="seg" id="seg">
+        <button data-route="almaty" class="on">на Алмату (3 точки)</button>
+        <button data-route="astana">на Астану (2 точки)</button>
+      </div>
+
+      <h2>Вводные</h2>
+      <div class="grid">
+        <div><label>Дата выехала</label><input type="date" id="f-out" value="2026-04-13"></div>
+        <div><label>Дата заехала</label><input type="date" id="f-in" value="2026-04-16"></div>
+        <div><label>Поддоны</label><input type="number" id="f-pallets" value="32" min="0"></div>
+        <div><label>Коробок (авто ×160)</label><input type="number" id="f-boxes" value="5120" min="0"><div class="hint">правится вручную</div></div>
+        <div><label>Цена за кг, ₽</label><input type="number" id="f-price" value="100" step="0.01"></div>
+        <div><label>Кэшбек, %</label><input type="number" id="f-cashback" value="6.5" step="0.1"></div>
+        <div><label>Курс товара, ₸/₽</label><input type="number" id="f-rate" value="6" step="0.01"></div>
+        <div><label>Фрахт, ₸</label><input type="number" id="f-freight" value="1500000" step="1000"></div>
+        <div><label>Доки, ₽</label><input type="number" id="f-doki" value="50000" step="1000"></div>
+        <div><label>Курс доков, ₸/₽</label><input type="number" id="f-doki-rate" value="6" step="0.01"></div>
+      </div>
+
+      <h2 style="margin-top:18px">Распределение поддонов</h2>
+      <div id="f-dist"></div>
+      <div class="dist-check" id="dist-check"></div>
+    </div>
+
+    <!-- КАРТОЧКА + КНОПКИ -->
+    <div>
+      <div class="card" id="card">
+        <div class="head">
+          <span style="font-size:22px">🚚</span>
+          <div>
+            <div class="t">Себестоимость фуры</div>
+            <div class="r" id="c-route">Воронеж → Алмата · 13–16.04.2026</div>
+          </div>
+        </div>
+        <div class="crow"><span class="k">Поддоны</span><span class="v"><span id="c-pallets">32</span> <span class="m">· <span id="c-boxes">5 120</span> кор.</span></span></div>
+        <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> ₽</span></div>
+        <div class="crow"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
+        <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">2 000 000</span> ₸</span></div>
+        <div class="crow"><span class="k">Доки</span><span class="v"><span id="c-doki-rub">60 000</span> ₽ → <span id="c-doki-tng">0</span> ₸</span></div>
+        <div class="calc">
+          <div><span class="lab">Товар:</span> <span id="c-tovar-rub">0</span> ₽ × <span id="c-rate">6,25</span> = <b><span id="c-tovar">0</span> ₸</b></div>
+          <div><span class="lab">Итого:</span> <span id="c-tovar2">0</span> + <span id="c-freight2">2 000 000</span> + <span id="c-doki2">0</span> = <b><span id="c-total">0</span> ₸</b></div>
+        </div>
+        <div class="sebest">
+          <span class="l">Себестоимость / коробка<small><span id="c-total3">0</span> ÷ <span id="c-boxes2">5 120</span> ящиков</small></span>
+          <span class="big"><span id="c-sebest">0</span> ₸</span>
+        </div>
+        <div class="dist-title">Распределение поддонов · <span id="c-dist-route">на Алмату</span></div>
+        <div id="c-dist"></div>
+        <div class="foot"><span>Калькулятор фуры · грибы</span><span id="c-date">12.06.2026</span></div>
+      </div>
+      <div class="btns">
+        <button class="primary" id="btn-png">Скачать картинку (PNG)</button>
+        <button id="btn-reset">Сбросить</button>
+      </div>
+      <p class="hint" style="text-align:center">Кнопка PNG требует интернет (грузит мини-библиотеку). Сам расчёт работает офлайн.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script>
+  var BOX_PER_PALLET = 160, KG_PER_BOX = 3;
+  var ROUTES = {
+    almaty: { label:'на Алмату', dest:'Алмата', cities:[['Актобе',3],['Шымкент',8],['Алмата',21]] },
+    astana: { label:'на Астану', dest:'Астана', cities:[['Астана',20],['Караганда',12]] }
+  };
+  var route = 'almaty';
+  var $ = function(id){ return document.getElementById(id); };
+  var nf = new Intl.NumberFormat('ru-RU');
+  var rf = new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2});
+  function money(n){ return nf.format(Math.round(n||0)); }
+  function rate(n){ return rf.format(n||0); }
+  function num(id){ var v = parseFloat($(id).value.replace(',','.')); return isNaN(v)?0:v; }
+  function dmy(s){ if(!s) return ''; var p=s.split('-'); return p[2]+'.'+p[1]; }
+
+  function buildDist(){
+    var box = $('f-dist'); box.innerHTML='';
+    ROUTES[route].cities.forEach(function(c,i){
+      var row = document.createElement('div'); row.className='dist-row';
+      row.innerHTML = '<div class="city">'+c[0]+'</div>'+
+        '<input type="number" min="0" data-city="'+i+'" value="'+c[1]+'">'+
+        '<div class="boxes" data-boxes="'+i+'"></div>';
+      box.appendChild(row);
+    });
+    box.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', recompute); });
+  }
+
+  function recompute(){
+    var pallets = num('f-pallets');
+    var boxes = num('f-boxes') || pallets*BOX_PER_PALLET;
+    var price = num('f-price'), cashback = num('f-cashback'), rateT = num('f-rate');
+    var freight = num('f-freight'), dokiRub = num('f-doki'), dokiRate = num('f-doki-rate');
+
+    var buyGross = boxes * KG_PER_BOX * price;
+    var buyNet = buyGross * (1 - cashback/100);
+    var tovar = buyNet * rateT;
+    var dokiTng = dokiRub * dokiRate;
+    var total = tovar + freight + dokiTng;
+    var sebest = boxes ? total/boxes : 0;
+
+    // dates
+    var out=$('f-out').value, inn=$('f-in').value, days='';
+    if(out&&inn){ var d=(new Date(inn)-new Date(out))/86400000; if(d>=0) days=' · '+d+' дн.'; }
+    $('c-route').textContent = 'Воронеж → '+ROUTES[route].dest+' · '+dmy(out)+'–'+dmy(inn)+'.'+(inn?inn.split('-')[0]:'')+(days);
+
+    $('c-pallets').textContent = nf.format(pallets);
+    $('c-boxes').textContent = money(boxes);
+    $('c-boxes2').textContent = money(boxes);
+    $('c-price').textContent = rate(price);
+    $('c-cashback').textContent = rate(cashback);
+    $('c-buy-gross').textContent = money(buyGross);
+    $('c-buy-net').textContent = money(buyNet);
+    $('c-freight').textContent = money(freight);
+    $('c-freight2').textContent = money(freight);
+    $('c-doki-rub').textContent = money(dokiRub);
+    $('c-doki-tng').textContent = money(dokiTng);
+    $('c-doki2').textContent = money(dokiTng);
+    $('c-tovar-rub').textContent = money(buyNet);
+    $('c-rate').textContent = rate(rateT);
+    $('c-tovar').textContent = money(tovar);
+    $('c-tovar2').textContent = money(tovar);
+    $('c-total').textContent = money(total);
+    $('c-total3').textContent = money(total);
+    $('c-sebest').textContent = money(sebest);
+    $('c-dist-route').textContent = ROUTES[route].label;
+
+    // distribution
+    var sum=0, html='';
+    document.querySelectorAll('#f-dist input').forEach(function(inp){
+      var i=inp.getAttribute('data-city');
+      var p=parseFloat(inp.value)||0; sum+=p;
+      var b=p*BOX_PER_PALLET;
+      var bd=document.querySelector('[data-boxes="'+i+'"]'); if(bd) bd.textContent=money(b)+' кор.';
+      var city=ROUTES[route].cities[i][0];
+      html+='<div class="crow"><span class="k">📍 '+city+'</span><span class="v">'+nf.format(p)+' под. <span class="m">· '+money(b)+' кор.</span></span></div>';
+    });
+    $('c-dist').innerHTML = html;
+    var chk=$('dist-check');
+    chk.textContent='Роздано '+nf.format(sum)+' / '+nf.format(pallets)+' поддонов';
+    chk.className='dist-check '+(sum===pallets?'ok':'bad');
+  }
+
+  // events
+  $('f-pallets').addEventListener('input', function(){ $('f-boxes').value = num('f-pallets')*BOX_PER_PALLET; recompute(); });
+  ['f-out','f-in','f-boxes','f-price','f-cashback','f-rate','f-freight','f-doki','f-doki-rate'].forEach(function(id){
+    $(id).addEventListener('input', recompute);
+  });
+  $('seg').addEventListener('click', function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    route=b.getAttribute('data-route');
+    $('seg').querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x===b); });
+    buildDist(); recompute();
+  });
+  $('btn-reset').addEventListener('click', function(){
+    document.querySelectorAll('input[type=number]').forEach(function(i){ i.value=''; });
+    buildDist(); recompute();
+  });
+  $('btn-png').addEventListener('click', function(){
+    if(!window.htmlToImage){ alert('Нет интернета — библиотека PNG не загрузилась. Подключись к сети и попробуй снова.'); return; }
+    htmlToImage.toPng($('card'),{pixelRatio:2,backgroundColor:'#ffffff'})
+      .then(function(url){ var a=document.createElement('a'); a.download='sebestoimost-fury.png'; a.href=url; a.click(); })
+      .catch(function(err){ alert('Не удалось сохранить картинку: '+err); });
+  });
+
+  buildDist(); recompute();
+</script>
+</body>
+</html>
