@@ -36,6 +36,7 @@
   .dist-row input{padding:0 6px}
   .dist-head{display:grid;grid-template-columns:1fr 58px 74px 74px;gap:8px;font-size:11px;color:var(--faint);margin-bottom:4px}
   .dist-head span:not(:first-child){text-align:center}
+  #f-dist.np .dist-row,#f-dist.np .dist-head{grid-template-columns:1fr 58px 74px}
   .dist-check{font-size:12px;margin-top:6px}
   .ok{color:var(--accent)} .bad{color:#c0392b}
   .hint{font-size:11px;color:var(--faint);margin-top:3px}
@@ -152,6 +153,7 @@
     </div>
     <div id="hist-chart"></div>
     <div id="hist-list"></div>
+    <button id="hist-clear" style="margin-top:10px;height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#c0392b;cursor:pointer;font-size:13px">Очистить историю</button>
     <p class="hint">История хранится только на этом устройстве (в браузере). Никуда не отправляется.</p>
   </div>
 </div>
@@ -179,8 +181,10 @@
 
   function buildDist(saved){
     var box = $('f-dist'); box.innerHTML='';
+    var withPrice = (route==='almaty');
+    box.classList.toggle('np', !withPrice);
     var head = document.createElement('div'); head.className='dist-head';
-    head.innerHTML = '<span>город</span><span>паллеты</span><span>коробки</span><span>цена ₸</span>';
+    head.innerHTML = '<span>город</span><span>паллеты</span><span>коробки</span>'+(withPrice?'<span>цена ₸</span>':'');
     box.appendChild(head);
     ROUTES[route].cities.forEach(function(c,i){
       var sv = (saved && saved[i]) ? saved[i] : {p:c[1], b:c[1]*BOX_PER_PALLET, price:''};
@@ -188,7 +192,7 @@
       row.innerHTML = '<div class="city">'+c[0]+'</div>'+
         '<input type="number" min="0" data-city="'+i+'" value="'+sv.p+'">'+
         '<input type="number" min="0" data-boxesin="'+i+'" value="'+sv.b+'">'+
-        '<input type="number" min="0" data-price="'+i+'" value="'+(sv.price||'')+'" placeholder="—">';
+        (withPrice?'<input type="number" min="0" data-price="'+i+'" value="'+(sv.price||'')+'" placeholder="—">':'');
       box.appendChild(row);
     });
     box.querySelectorAll('input[data-city]').forEach(function(inp){
@@ -355,6 +359,10 @@
       editingId=id2; applyState(entry); setSaveLabel();
       if(window.scrollTo) window.scrollTo({top:0,behavior:'smooth'});
     }
+  });
+
+  $('hist-clear').addEventListener('click', function(){
+    if(confirm('Удалить всю историю фур на этом устройстве?')){ editingId=null; setSaveLabel(); saveHistArr([]); renderHist(); }
   });
 
   // events
