@@ -31,10 +31,11 @@
   .seg{display:flex;gap:8px;margin:0 0 16px}
   .seg button{flex:1;height:40px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;font-weight:500}
   .seg button.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
-  .dist-row{display:grid;grid-template-columns:1fr 86px 104px;gap:10px;align-items:center;margin-bottom:8px}
+  .dist-row{display:grid;grid-template-columns:1fr 58px 74px 74px;gap:8px;align-items:center;margin-bottom:8px}
   .dist-row .city{font-size:14px}
-  .dist-head{display:grid;grid-template-columns:1fr 86px 104px;gap:10px;font-size:11px;color:var(--faint);margin-bottom:4px}
-  .dist-head span:nth-child(2),.dist-head span:nth-child(3){text-align:center}
+  .dist-row input{padding:0 6px}
+  .dist-head{display:grid;grid-template-columns:1fr 58px 74px 74px;gap:8px;font-size:11px;color:var(--faint);margin-bottom:4px}
+  .dist-head span:not(:first-child){text-align:center}
   .dist-check{font-size:12px;margin-top:6px}
   .ok{color:var(--accent)} .bad{color:#c0392b}
   .hint{font-size:11px;color:var(--faint);margin-top:3px}
@@ -48,7 +49,8 @@
   .hrow .hd{color:var(--muted);font-size:12px;min-width:86px}
   .hrow .hm{color:var(--muted);font-size:12px;flex:1}
   .hrow .hs{font-weight:600;white-space:nowrap}
-  .hrow .hx{border:none;background:none;color:#c0392b;cursor:pointer;font-size:15px;padding:2px 6px}
+  .hrow .hx{border:none;background:none;color:#c0392b;cursor:pointer;font-size:15px;padding:2px 4px}
+  .hrow .he{border:none;background:none;color:var(--accent);cursor:pointer;font-size:15px;padding:2px 4px}
   #hist-chart{margin:4px 0 12px}
   .hist-empty{color:var(--faint);font-size:13px;padding:10px 0}
 
@@ -88,8 +90,8 @@
 
       <h2>Вводные</h2>
       <div class="grid">
-        <div><label>Дата выехала</label><input type="date" id="f-out" value="2026-04-13"></div>
-        <div><label>Дата заехала</label><input type="date" id="f-in" value="2026-04-16"></div>
+        <div><label>Дата выехала</label><input type="date" id="f-out"></div>
+        <div><label>Дата заехала</label><input type="date" id="f-in"></div>
         <div><label>Паллеты</label><input type="number" id="f-pallets" value="32" min="0"></div>
         <div><label>Коробок (авто ×160)</label><input type="number" id="f-boxes" value="5120" min="0"><div class="hint">правится вручную</div></div>
         <div><label>Цена за кг, ₽</label><input type="number" id="f-price" value="100" step="0.01"></div>
@@ -163,6 +165,7 @@
   };
   var route = 'almaty';
   var LAST = null;
+  var editingId = null;
   var histRoute = 'almaty';
   var HKEY = 'fura-history-v1';
   var $ = function(id){ return document.getElementById(id); };
@@ -172,17 +175,20 @@
   function rate(n){ return rf.format(n||0); }
   function num(id){ var v = parseFloat($(id).value.replace(',','.')); return isNaN(v)?0:v; }
   function dmy(s){ if(!s) return ''; var p=s.split('-'); return p[2]+'.'+p[1]; }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
-  function buildDist(){
+  function buildDist(saved){
     var box = $('f-dist'); box.innerHTML='';
     var head = document.createElement('div'); head.className='dist-head';
-    head.innerHTML = '<span>город</span><span>паллеты</span><span>коробки</span>';
+    head.innerHTML = '<span>город</span><span>паллеты</span><span>коробки</span><span>цена ₸</span>';
     box.appendChild(head);
     ROUTES[route].cities.forEach(function(c,i){
+      var sv = (saved && saved[i]) ? saved[i] : {p:c[1], b:c[1]*BOX_PER_PALLET, price:''};
       var row = document.createElement('div'); row.className='dist-row';
       row.innerHTML = '<div class="city">'+c[0]+'</div>'+
-        '<input type="number" min="0" data-city="'+i+'" value="'+c[1]+'">'+
-        '<input type="number" min="0" data-boxesin="'+i+'" value="'+(c[1]*BOX_PER_PALLET)+'">';
+        '<input type="number" min="0" data-city="'+i+'" value="'+sv.p+'">'+
+        '<input type="number" min="0" data-boxesin="'+i+'" value="'+sv.b+'">'+
+        '<input type="number" min="0" data-price="'+i+'" value="'+(sv.price||'')+'" placeholder="—">';
       box.appendChild(row);
     });
     box.querySelectorAll('input[data-city]').forEach(function(inp){
@@ -193,7 +199,7 @@
         recompute();
       });
     });
-    box.querySelectorAll('input[data-boxesin]').forEach(function(inp){ inp.addEventListener('input', recompute); });
+    box.querySelectorAll('input[data-boxesin],input[data-price]').forEach(function(inp){ inp.addEventListener('input', recompute); });
   }
 
   function recompute(){
@@ -211,7 +217,7 @@
 
     // dates
     var out=$('f-out').value, inn=$('f-in').value, days='';
-    if(out&&inn){ var d=(new Date(inn)-new Date(out))/86400000; if(d>=0) days=' · '+d+' дн.'; }
+    if(out&&inn){ var d=(new Date(inn)-new Date(out))/86400000; if(d>0) days=' · '+d+' дн.'; }
     $('c-route').textContent = 'Воронеж → '+ROUTES[route].dest+' · '+dmy(out)+'–'+dmy(inn)+'.'+(inn?inn.split('-')[0]:'')+(days);
 
     $('c-pallets').textContent = nf.format(pallets);
@@ -236,14 +242,17 @@
     $('c-dist-route').textContent = ROUTES[route].label;
 
     // distribution
-    var sumP=0, sumB=0, html='';
-    document.querySelectorAll('#f-dist input[data-city]').forEach(function(inp){
-      var i=inp.getAttribute('data-city');
-      var p=parseFloat(inp.value)||0; sumP+=p;
+    var sumP=0, sumB=0, html='', distArr=[];
+    ROUTES[route].cities.forEach(function(c,i){
+      var pi=document.querySelector('[data-city="'+i+'"]');
       var bi=document.querySelector('[data-boxesin="'+i+'"]');
+      var pri=document.querySelector('[data-price="'+i+'"]');
+      var p=pi?(parseFloat(pi.value)||0):0; sumP+=p;
       var b=bi?(parseFloat(bi.value)||0):p*BOX_PER_PALLET; sumB+=b;
-      var city=ROUTES[route].cities[i][0];
-      html+='<div class="crow"><span class="k">📍 '+city+'</span><span class="v">'+nf.format(p)+'п. / '+money(b)+' кор.</span></div>';
+      var pr=pri?(parseFloat(pri.value)||0):0;
+      distArr.push({p:p,b:b,price:pr});
+      var priceTxt = pr>0 ? ' <span class="m">· '+money(pr)+' ₸</span>' : '';
+      html+='<div class="crow"><span class="k">📍 '+c[0]+'</span><span class="v">'+nf.format(p)+'п. / '+money(b)+' кор.'+priceTxt+'</span></div>';
     });
     $('c-dist').innerHTML = html;
     var chk=$('dist-check');
@@ -252,8 +261,22 @@
     chk.className='dist-check '+(okAll?'ok':'bad');
 
     LAST = { route:route, out:out, inn:inn, pallets:pallets, boxes:boxes,
+             price:price, cashback:cashback, rate:rateT, freight:freight,
+             doki:dokiRub, dokiRate:dokiRate, dist:distArr,
              sebest:Math.round(sebest), total:Math.round(total) };
   }
+
+  function applyState(s){
+    route = s.route || 'almaty';
+    $('seg').querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-route')===route); });
+    $('f-out').value=s.out||''; $('f-in').value=s.inn||'';
+    $('f-pallets').value=(s.pallets!=null?s.pallets:''); $('f-boxes').value=(s.boxes!=null?s.boxes:'');
+    $('f-price').value=(s.price!=null?s.price:''); $('f-cashback').value=(s.cashback!=null?s.cashback:'');
+    $('f-rate').value=(s.rate!=null?s.rate:''); $('f-freight').value=(s.freight!=null?s.freight:'');
+    $('f-doki').value=(s.doki!=null?s.doki:''); $('f-doki-rate').value=(s.dokiRate!=null?s.dokiRate:'');
+    buildDist(s.dist); recompute();
+  }
+  function setSaveLabel(){ $('btn-save').textContent = editingId ? '💾 Сохранить изменения' : '💾 В историю'; }
 
   /* ---- history ---- */
   function loadHist(){ try{ return JSON.parse(localStorage.getItem(HKEY))||[] }catch(e){ return [] } }
@@ -296,6 +319,7 @@
       html += '<div class="hrow"><span class="hd">'+d+'</span>'+
         '<span class="hm">'+nf.format(e.pallets)+' пал · '+money(e.boxes)+' кор</span>'+
         '<span class="hs">'+money(e.sebest)+' ₸</span>'+
+        '<button class="he" data-edit="'+e.id+'" title="изменить">✏️</button>'+
         '<button class="hx" data-del="'+e.id+'" title="удалить">✕</button></div>';
     });
     $('hist-list').innerHTML = html;
@@ -304,13 +328,15 @@
   $('btn-save').addEventListener('click', function(){
     if(!LAST || !LAST.boxes){ alert('Сначала заполни расчёт.'); return; }
     var all = loadHist();
-    all.push(Object.assign({id:Date.now()}, LAST));
+    if(editingId){ all = all.map(function(x){ return x.id===editingId ? Object.assign({id:editingId}, LAST) : x; }); }
+    else { all.push(Object.assign({id:Date.now()}, LAST)); }
     saveHistArr(all);
     histRoute = LAST.route;
     document.querySelectorAll('#hist-seg button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-hroute')===histRoute); });
+    var wasEditing=!!editingId; editingId=null; setSaveLabel();
     renderHist();
-    var b=this, t=b.textContent; b.textContent='Сохранено ✓';
-    setTimeout(function(){ b.textContent=t; }, 1300);
+    this.textContent = wasEditing ? 'Изменено ✓' : 'Сохранено ✓';
+    setTimeout(setSaveLabel, 1300);
   });
   $('hist-seg').addEventListener('click', function(e){
     var b=e.target.closest('button'); if(!b) return;
@@ -319,10 +345,16 @@
     renderHist();
   });
   $('hist-list').addEventListener('click', function(e){
-    var b=e.target.closest('[data-del]'); if(!b) return;
-    var id=+b.getAttribute('data-del');
-    saveHistArr(loadHist().filter(function(x){ return x.id!==id; }));
-    renderHist();
+    var del=e.target.closest('[data-del]'), ed=e.target.closest('[data-edit]');
+    if(del){ var id=+del.getAttribute('data-del');
+      if(editingId===id){ editingId=null; setSaveLabel(); }
+      saveHistArr(loadHist().filter(function(x){ return x.id!==id; })); renderHist(); return; }
+    if(ed){ var id2=+ed.getAttribute('data-edit');
+      var entry=loadHist().filter(function(x){ return x.id===id2; })[0];
+      if(!entry) return;
+      editingId=id2; applyState(entry); setSaveLabel();
+      if(window.scrollTo) window.scrollTo({top:0,behavior:'smooth'});
+    }
   });
 
   // events
@@ -334,10 +366,13 @@
     var b=e.target.closest('button'); if(!b) return;
     route=b.getAttribute('data-route');
     $('seg').querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x===b); });
+    editingId=null; setSaveLabel();
     buildDist(); recompute();
   });
   $('btn-reset').addEventListener('click', function(){
     document.querySelectorAll('input[type=number]').forEach(function(i){ i.value=''; });
+    $('f-out').value=todayISO(); $('f-in').value=todayISO();
+    editingId=null; setSaveLabel();
     buildDist(); recompute();
   });
   $('btn-png').addEventListener('click', function(){
@@ -358,6 +393,9 @@
     }).catch(function(err){ alert('Не удалось подготовить картинку: '+err); });
   });
 
+  $('f-out').value=todayISO(); $('f-in').value=todayISO();
+  $('c-date').textContent = dmy(todayISO())+'.'+todayISO().split('-')[0];
+  setSaveLabel();
   buildDist(); recompute(); renderHist();
 </script>
 </body>
