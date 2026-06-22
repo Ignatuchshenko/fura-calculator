@@ -163,13 +163,14 @@
   var BOX_PER_PALLET = 160, KG_PER_BOX = 3;
   var ROUTES = {
     almaty: { label:'на Алмату', dest:'Алмата', cities:[['Актобе',3],['Шымкент',8],['Алмата',21]] },
-    astana: { label:'на Астану', dest:'Астана', cities:[['Астана',20],['Караганда',12]] }
+    astana: { label:'на Астану', dest:'Астана', cities:[['Актобе',0],['Астана',20],['Караганда',12]] }
   };
   var route = 'almaty';
   var LAST = null;
   var editingId = null;
   var histRoute = 'almaty';
   var HKEY = 'fura-history-v1';
+  var LKEY = 'fura-last-input-v1';
   var $ = function(id){ return document.getElementById(id); };
   var nf = new Intl.NumberFormat('ru-RU');
   var rf = new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2});
@@ -268,6 +269,7 @@
              price:price, cashback:cashback, rate:rateT, freight:freight,
              doki:dokiRub, dokiRate:dokiRate, dist:distArr,
              sebest:Math.round(sebest), total:Math.round(total) };
+    if(boxes>0){ try{ localStorage.setItem(LKEY, JSON.stringify(LAST)); }catch(e){} }
   }
 
   function applyState(s){
@@ -401,10 +403,13 @@
     }).catch(function(err){ alert('Не удалось подготовить картинку: '+err); });
   });
 
+  var savedInput=null;
+  try{ savedInput=JSON.parse(localStorage.getItem(LKEY)); }catch(e){}
+  if(savedInput && savedInput.boxes){ applyState(savedInput); } else { buildDist(); }
   $('f-out').value=todayISO(); $('f-in').value=todayISO();
   $('c-date').textContent = dmy(todayISO())+'.'+todayISO().split('-')[0];
   setSaveLabel();
-  buildDist(); recompute(); renderHist();
+  recompute(); renderHist();
 </script>
 </body>
 </html>
