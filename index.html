@@ -37,6 +37,10 @@
   .dist-head{display:grid;grid-template-columns:1fr 58px 74px 74px;gap:8px;font-size:11px;color:var(--faint);margin-bottom:4px}
   .dist-head span:not(:first-child){text-align:center}
   #f-dist.np .dist-row,#f-dist.np .dist-head{grid-template-columns:1fr 58px 74px}
+  .pay-row{display:grid;grid-template-columns:1fr 96px;gap:8px;margin-bottom:8px}
+  .pay-row input{padding:0 8px}
+  .pay-head{display:grid;grid-template-columns:1fr 96px;gap:8px;font-size:11px;color:var(--faint);margin-bottom:4px}
+  .pay-head span:last-child{text-align:center}
   .dist-check{font-size:12px;margin-top:6px}
   .ok{color:var(--accent)} .bad{color:#c0392b}
   .hint{font-size:11px;color:var(--faint);margin-top:3px}
@@ -95,13 +99,16 @@
         <div><label>Дата заехала</label><input type="date" id="f-in"></div>
         <div><label>Паллеты</label><input type="number" id="f-pallets" value="32" min="0"></div>
         <div><label>Коробок (авто ×160)</label><input type="number" id="f-boxes" value="5120" min="0"><div class="hint">правится вручную</div></div>
-        <div><label>Цена за кг, ₽</label><input type="number" id="f-price" value="100" step="0.01"></div>
         <div><label>Кэшбек, %</label><input type="number" id="f-cashback" value="6.5" step="0.1"></div>
-        <div><label>Курс товара, ₸/₽</label><input type="number" id="f-rate" value="6" step="0.01"></div>
         <div><label>Фрахт, ₸</label><input type="number" id="f-freight" value="1500000" step="1000"></div>
         <div><label>Доки, ₽</label><input type="number" id="f-doki" value="50000" step="1000"></div>
         <div><label>Курс доков, ₸/₽</label><input type="number" id="f-doki-rate" value="6" step="0.01"></div>
       </div>
+
+      <h2 style="margin-top:18px">Закуп: сумма ₽ × курс <span style="text-transform:none;font-weight:400;color:var(--faint)">(заполни сколько нужно)</span></h2>
+      <div class="pay-head"><span>сумма ₽</span><span>курс ₸/₽</span></div>
+      <div id="f-pay"></div>
+      <div class="dist-check" id="pay-check"></div>
 
       <h2 style="margin-top:18px">Распределение по городам</h2>
       <div id="f-dist"></div>
@@ -119,13 +126,13 @@
           </div>
         </div>
         <div class="crow"><span class="k">Количество</span><span class="v"><span id="c-pallets">32</span>п. / <span id="c-boxes">5 120</span> кор.</span></div>
-        <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> ₽</span></div>
-        <div class="crow"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
-        <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">2 000 000</span> ₸</span></div>
-        <div class="crow"><span class="k">Доки</span><span class="v"><span id="c-doki-rub">60 000</span> ₽ → <span id="c-doki-tng">0</span> ₸</span></div>
+        <div class="crow"><span class="k">Цена/кг (расч.)</span><span class="v"><span id="c-price">—</span> ₽</span></div>
+        <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">0</span> ₸</span></div>
+        <div class="crow"><span class="k">Доки</span><span class="v"><span id="c-doki-rub">0</span> ₽ → <span id="c-doki-tng">0</span> ₸</span></div>
         <div class="calc">
-          <div><span class="lab">Товар:</span> <span id="c-tovar-rub">0</span> ₽ × <span id="c-rate">6,25</span> = <b><span id="c-tovar">0</span> ₸</b></div>
-          <div><span class="lab">Итого:</span> <span id="c-tovar2">0</span> + <span id="c-freight2">2 000 000</span> + <span id="c-doki2">0</span> = <b><span id="c-total">0</span> ₸</b></div>
+          <div><span class="lab">Оплата ₽ × курс:</span> <span id="c-pay">—</span></div>
+          <div><span class="lab">Товар (−кэшбек <span id="c-cashback2">6,5</span>%):</span> <b><span id="c-tovar">0</span> ₸</b></div>
+          <div><span class="lab">Итого:</span> <span id="c-tovar2">0</span> + <span id="c-freight2">0</span> + <span id="c-doki2">0</span> = <b><span id="c-total">0</span> ₸</b></div>
         </div>
         <div class="sebest">
           <span class="l">Себестоимость / коробка<small><span id="c-total3">0</span> ÷ <span id="c-boxes2">5 120</span> ящиков</small></span>
@@ -133,7 +140,7 @@
         </div>
         <div class="dist-title">Распределение по городам · <span id="c-dist-route">на Алмату</span></div>
         <div id="c-dist"></div>
-        <div class="foot"><span>Калькулятор фуры · грибы</span><span id="c-date">12.06.2026</span></div>
+        <div class="foot" style="justify-content:flex-end"><span id="c-date">12.06.2026</span></div>
       </div>
       <div class="btns">
         <button class="primary wide" id="btn-share">📤 Поделиться (WhatsApp / Telegram)</button>
@@ -207,18 +214,38 @@
     box.querySelectorAll('input[data-boxesin],input[data-price]').forEach(function(inp){ inp.addEventListener('input', recompute); });
   }
 
+  function buildPay(saved){
+    var box=$('f-pay'); box.innerHTML='';
+    for(var i=0;i<5;i++){
+      var sv=(saved && saved[i]) ? saved[i] : {sum:'',rate:''};
+      var row=document.createElement('div'); row.className='pay-row';
+      row.innerHTML='<input type="number" min="0" step="0.01" data-pay-sum placeholder="сумма ₽" value="'+(sv.sum||'')+'">'+
+        '<input type="number" min="0" step="0.01" data-pay-rate placeholder="курс" value="'+(sv.rate||'')+'">';
+      box.appendChild(row);
+    }
+    box.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', recompute); });
+  }
+
   function recompute(){
     var pallets = num('f-pallets');
     var boxes = num('f-boxes') || pallets*BOX_PER_PALLET;
-    var price = num('f-price'), cashback = num('f-cashback'), rateT = num('f-rate');
+    var cashback = num('f-cashback');
     var freight = num('f-freight'), dokiRub = num('f-doki'), dokiRate = num('f-doki-rate');
 
-    var buyGross = boxes * KG_PER_BOX * price;
-    var buyNet = buyGross * (1 - cashback/100);
-    var tovar = buyNet * rateT;
+    // закуп: несколько (сумма ₽ × курс)
+    var tranches=[], grossRub=0, tovarGross=0, payParts=[];
+    document.querySelectorAll('#f-pay .pay-row').forEach(function(row){
+      var si=row.querySelector('[data-pay-sum]'), ri=row.querySelector('[data-pay-rate]');
+      var s=si?(parseFloat(String(si.value).replace(',','.'))||0):0;
+      var r=ri?(parseFloat(String(ri.value).replace(',','.'))||0):0;
+      tranches.push({sum:s,rate:r});
+      if(s>0){ grossRub+=s; if(r>0){ tovarGross+=s*r; payParts.push(money(s)+' × '+rate(r)); } }
+    });
+    var tovar = tovarGross * (1 - cashback/100);
     var dokiTng = dokiRub * dokiRate;
     var total = tovar + freight + dokiTng;
     var sebest = boxes ? total/boxes : 0;
+    var impliedPrice = (boxes>0) ? grossRub/(boxes*KG_PER_BOX) : 0;
 
     // dates
     var out=$('f-out').value, inn=$('f-in').value, days='';
@@ -228,23 +255,23 @@
     $('c-pallets').textContent = nf.format(pallets);
     $('c-boxes').textContent = money(boxes);
     $('c-boxes2').textContent = money(boxes);
-    $('c-price').textContent = rate(price);
-    $('c-cashback').textContent = rate(cashback);
-    $('c-buy-gross').textContent = money(buyGross);
-    $('c-buy-net').textContent = money(buyNet);
+    $('c-price').textContent = impliedPrice ? rate(impliedPrice) : '—';
+    $('c-cashback2').textContent = rate(cashback);
+    $('c-pay').textContent = payParts.length ? (payParts.join(' + ')+' = '+money(tovarGross)+' ₸') : '—';
     $('c-freight').textContent = money(freight);
     $('c-freight2').textContent = money(freight);
     $('c-doki-rub').textContent = money(dokiRub);
     $('c-doki-tng').textContent = money(dokiTng);
     $('c-doki2').textContent = money(dokiTng);
-    $('c-tovar-rub').textContent = money(buyNet);
-    $('c-rate').textContent = rate(rateT);
     $('c-tovar').textContent = money(tovar);
     $('c-tovar2').textContent = money(tovar);
     $('c-total').textContent = money(total);
     $('c-total3').textContent = money(total);
     $('c-sebest').textContent = money(sebest);
     $('c-dist-route').textContent = ROUTES[route].label;
+
+    var pc=$('pay-check');
+    if(pc){ pc.textContent = grossRub ? ('Сумма закупа: '+money(grossRub)+' ₽  ·  ~'+rate(impliedPrice)+' ₽/кг') : ''; }
 
     // distribution
     var sumP=0, sumB=0, html='', distArr=[];
@@ -266,8 +293,8 @@
     chk.className='dist-check '+(okAll?'ok':'bad');
 
     LAST = { route:route, out:out, inn:inn, pallets:pallets, boxes:boxes,
-             price:price, cashback:cashback, rate:rateT, freight:freight,
-             doki:dokiRub, dokiRate:dokiRate, dist:distArr,
+             cashback:cashback, freight:freight, doki:dokiRub, dokiRate:dokiRate,
+             tranches:tranches, dist:distArr,
              sebest:Math.round(sebest), total:Math.round(total) };
     if(boxes>0){ try{ localStorage.setItem(LKEY, JSON.stringify(LAST)); }catch(e){} }
   }
@@ -277,10 +304,9 @@
     $('seg').querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-route')===route); });
     $('f-out').value=s.out||''; $('f-in').value=s.inn||'';
     $('f-pallets').value=(s.pallets!=null?s.pallets:''); $('f-boxes').value=(s.boxes!=null?s.boxes:'');
-    $('f-price').value=(s.price!=null?s.price:''); $('f-cashback').value=(s.cashback!=null?s.cashback:'');
-    $('f-rate').value=(s.rate!=null?s.rate:''); $('f-freight').value=(s.freight!=null?s.freight:'');
+    $('f-cashback').value=(s.cashback!=null?s.cashback:''); $('f-freight').value=(s.freight!=null?s.freight:'');
     $('f-doki').value=(s.doki!=null?s.doki:''); $('f-doki-rate').value=(s.dokiRate!=null?s.dokiRate:'');
-    buildDist(s.dist); recompute();
+    buildPay(s.tranches); buildDist(s.dist); recompute();
   }
   function setSaveLabel(){ $('btn-save').textContent = editingId ? '💾 Сохранить изменения' : '💾 В историю'; }
 
@@ -369,7 +395,7 @@
 
   // events
   $('f-pallets').addEventListener('input', function(){ $('f-boxes').value = num('f-pallets')*BOX_PER_PALLET; recompute(); });
-  ['f-out','f-in','f-boxes','f-price','f-cashback','f-rate','f-freight','f-doki','f-doki-rate'].forEach(function(id){
+  ['f-out','f-in','f-boxes','f-cashback','f-freight','f-doki','f-doki-rate'].forEach(function(id){
     $(id).addEventListener('input', recompute);
   });
   $('seg').addEventListener('click', function(e){
@@ -383,7 +409,7 @@
     document.querySelectorAll('input[type=number]').forEach(function(i){ i.value=''; });
     $('f-out').value=todayISO(); $('f-in').value=todayISO();
     editingId=null; setSaveLabel();
-    buildDist(); recompute();
+    buildPay(); buildDist(); recompute();
   });
   $('btn-png').addEventListener('click', function(){
     if(!window.htmlToImage){ alert('Нет интернета — библиотека PNG не загрузилась. Подключись к сети и попробуй снова.'); return; }
@@ -405,7 +431,7 @@
 
   var savedInput=null;
   try{ savedInput=JSON.parse(localStorage.getItem(LKEY)); }catch(e){}
-  if(savedInput && savedInput.boxes){ applyState(savedInput); } else { buildDist(); }
+  if(savedInput && savedInput.boxes){ applyState(savedInput); } else { buildPay(); buildDist(); }
   $('f-out').value=todayISO(); $('f-in').value=todayISO();
   $('c-date').textContent = dmy(todayISO())+'.'+todayISO().split('-')[0];
   setSaveLabel();
