@@ -300,7 +300,7 @@
       distArr.push({p:p,b:b,price:pr});
       if(p>0 || b>0){
         var priceTxt = pr>0 ? ' <span class="m">· '+money(pr)+' ₸</span> ('+money(b*pr)+' ₸)' : '';
-        html+='<div class="crow"><span class="k">📍 '+c[0]+'</span><span class="v">'+nf.format(p)+'п. / '+money(b*KG_PER_BOX)+' кг'+priceTxt+'</span></div>';
+        html+='<div class="crow"><span class="k">📍 '+c[0]+'</span><span class="v">'+nf.format(p)+'п. / '+money(b)+' кор.'+priceTxt+'</span></div>';
       }
     });
     $('c-dist').innerHTML = html;
@@ -367,7 +367,7 @@
     es.slice().reverse().forEach(function(e){
       var d = (e.out?dmy(e.out):'') + (e.inn?'–'+dmy(e.inn):'');
       html += '<div class="hrow"><span class="hd">'+d+'</span>'+
-        '<span class="hm">'+nf.format(e.pallets)+' пал · '+money(e.boxes*KG_PER_BOX)+' кг</span>'+
+        '<span class="hm">'+nf.format(e.pallets)+' пал · '+money(e.boxes)+' кор</span>'+
         '<span class="hs">'+money(e.sebest)+' ₸</span>'+
         '<button class="he" data-edit="'+e.id+'" title="изменить">✏️</button>'+
         '<button class="hx" data-del="'+e.id+'" title="удалить">✕</button></div>';
