@@ -171,8 +171,8 @@
 <script>
   var BOX_PER_PALLET = 160, KG_PER_BOX = 3;
   var ROUTES = {
-    almaty: { label:'на Алмату', dest:'Алмата', cities:[['Актобе',3],['Шымкент',8],['Алмата',21]] },
-    astana: { label:'на Астану', dest:'Астана', cities:[['Актобе',0],['Астана',20],['Караганда',12]] }
+    almaty: { label:'на Алмату', dest:'Алмата', cities:[['Актобе',3,1],['Шымкент',8,1],['Алмата',21,1]] },
+    astana: { label:'на Астану', dest:'Астана', cities:[['Актобе',0,1],['Астана',20,0],['Караганда',12,0]] }
   };
   var route = 'almaty';
   var LAST = null;
@@ -191,10 +191,9 @@
 
   function buildDist(saved){
     var box = $('f-dist'); box.innerHTML='';
-    var withPrice = (route==='almaty');
-    box.classList.toggle('np', !withPrice);
+    box.classList.remove('np');
     var head = document.createElement('div'); head.className='dist-head';
-    head.innerHTML = '<span>город</span><span>паллеты</span><span>коробки</span>'+(withPrice?'<span>цена ₸</span>':'');
+    head.innerHTML = '<span>город</span><span>паллеты</span><span>коробки</span><span>цена ₸</span>';
     box.appendChild(head);
     ROUTES[route].cities.forEach(function(c,i){
       var sv = (saved && saved[i]) ? saved[i] : {p:c[1], b:c[1]*BOX_PER_PALLET, price:''};
@@ -202,7 +201,7 @@
       row.innerHTML = '<div class="city">'+c[0]+'</div>'+
         '<input type="number" min="0" data-city="'+i+'" value="'+sv.p+'">'+
         '<input type="number" min="0" data-boxesin="'+i+'" value="'+sv.b+'">'+
-        (withPrice?'<input type="number" min="0" data-price="'+i+'" value="'+(sv.price||'')+'" placeholder="—">':'');
+        (c[2]?'<input type="number" min="0" data-price="'+i+'" value="'+(sv.price||'')+'" placeholder="—">':'<div></div>');
       box.appendChild(row);
     });
     box.querySelectorAll('input[data-city]').forEach(function(inp){
