@@ -127,7 +127,7 @@
             <div class="r" id="c-route">Воронеж → Алмата · 13–16.04.2026</div>
           </div>
         </div>
-        <div class="crow"><span class="k">Количество</span><span class="v"><span id="c-pallets">32</span>п. / <span id="c-boxes">5 120</span> кор.</span></div>
+        <div class="crow"><span class="k">Количество</span><span class="v"><span id="c-pallets">32</span>п. / <span id="c-boxes">15 360</span> кг</span></div>
         <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> ₽</span></div>
         <div class="crow"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
         <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">2 000 000</span> ₸</span></div>
@@ -259,7 +259,7 @@
     $('c-route').textContent = 'Воронеж → '+ROUTES[route].dest+' · '+dmy(out)+'–'+dmy(inn)+'.'+(inn?inn.split('-')[0]:'')+(days);
 
     $('c-pallets').textContent = nf.format(pallets);
-    $('c-boxes').textContent = money(boxes);
+    $('c-boxes').textContent = money(boxes*KG_PER_BOX);
     $('c-boxes2').textContent = money(boxes);
     $('c-price').textContent = rate(price);
     $('c-cashback').textContent = rate(cashback);
@@ -300,7 +300,7 @@
       distArr.push({p:p,b:b,price:pr});
       if(p>0 || b>0){
         var priceTxt = pr>0 ? ' <span class="m">· '+money(pr)+' ₸</span> ('+money(b*pr)+' ₸)' : '';
-        html+='<div class="crow"><span class="k">📍 '+c[0]+'</span><span class="v">'+nf.format(p)+'п. / '+money(b)+' кор.'+priceTxt+'</span></div>';
+        html+='<div class="crow"><span class="k">📍 '+c[0]+'</span><span class="v">'+nf.format(p)+'п. / '+money(b*KG_PER_BOX)+' кг'+priceTxt+'</span></div>';
       }
     });
     $('c-dist').innerHTML = html;
@@ -367,7 +367,7 @@
     es.slice().reverse().forEach(function(e){
       var d = (e.out?dmy(e.out):'') + (e.inn?'–'+dmy(e.inn):'');
       html += '<div class="hrow"><span class="hd">'+d+'</span>'+
-        '<span class="hm">'+nf.format(e.pallets)+' пал · '+money(e.boxes)+' кор</span>'+
+        '<span class="hm">'+nf.format(e.pallets)+' пал · '+money(e.boxes*KG_PER_BOX)+' кг</span>'+
         '<span class="hs">'+money(e.sebest)+' ₸</span>'+
         '<button class="he" data-edit="'+e.id+'" title="изменить">✏️</button>'+
         '<button class="hx" data-del="'+e.id+'" title="удалить">✕</button></div>';
