@@ -133,8 +133,8 @@
           </div>
         </div>
         <div class="crow"><span class="k">Количество</span><span class="v"><span id="c-pallets">32</span>п. / <span id="c-boxes">15 360</span> кг</span></div>
-        <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> ₽</span></div>
-        <div class="crow"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
+        <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> <span id="c-price-cur">₽</span></span></div>
+        <div class="crow"><span class="k">Закуп <span class="m" id="c-buy-cb">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v" id="c-buy-val">0 → 0 ₽</span></div>
         <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">2 000 000</span> ₸</span></div>
         <div class="crow"><span class="k">Доки</span><span class="v"><span id="c-doki-rub">60 000</span> ₽ → <span id="c-doki-tng">0</span> ₸</span></div>
         <div class="calc">
@@ -269,12 +269,14 @@
     $('c-pallets').textContent = nf.format(pallets);
     $('c-boxes').textContent = money(boxes*KG_PER_BOX);
     $('c-boxes2').textContent = money(boxes);
-    $('c-price').textContent = rate(price);
+    $('c-price').textContent = useTenge ? money(boxes?tengeDirect/(boxes*KG_PER_BOX):0) : rate(price);
+    $('c-price-cur').textContent = useTenge ? '₸' : '₽';
+    $('c-buy-cb').style.display = useTenge ? 'none' : '';
+    $('c-buy-val').textContent = useTenge ? (money(tengeDirect)+' ₸')
+                                          : (money(buyGross)+' → '+money(buyNet)+' ₽');
     $('c-tovar-calc').style.display = useTenge ? 'none' : '';
     $('c-tovar-note').textContent = useTenge ? ' (оплата тенге)' : '';
     $('c-cashback').textContent = rate(cashback);
-    $('c-buy-gross').textContent = money(buyGross);
-    $('c-buy-net').textContent = money(buyNet);
     $('c-freight').textContent = money(freight);
     $('c-freight2').textContent = money(freight);
     $('c-doki-rub').textContent = money(dokiRub);
