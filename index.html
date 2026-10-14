@@ -100,7 +100,6 @@
         <div><label>Паллеты</label><input type="number" id="f-pallets" value="32" min="0"></div>
         <div><label>Коробок (авто ×160)</label><input type="number" id="f-boxes" value="5120" min="0"><div class="hint">правится вручную</div></div>
         <div><label>Цена за кг, ₽</label><input type="number" id="f-price" value="100" step="0.01"></div>
-        <div><label>Товар, ₸ — оплата тенге</label><input type="number" id="f-tenge" step="1" placeholder="—"><div class="hint">готовая сумма с НДС, без фрахта. Заполнил → курс и кэшбек не нужны</div></div>
         <div><label>Кэшбек, %</label><input type="number" id="f-cashback" value="6.5" step="0.1"></div>
         <div><label>Курс товара, ₸/₽</label><input type="number" id="f-rate" value="6" step="0.01"></div>
         <div><label>Фрахт, ₸</label><input type="number" id="f-freight" value="1500000" step="1000"></div>
@@ -112,6 +111,11 @@
       <div class="pay-head"><span>сумма ₽ (как платили)</span><span>курс ₸/₽</span></div>
       <div id="f-multi"></div>
       <div class="dist-check" id="multi-check"></div>
+
+      <h2 style="margin-top:18px">Оплата тенге <span style="text-transform:none;font-weight:400;color:var(--faint)">— если платили тенге и сумма уже известна. Иначе оставь пустым</span></h2>
+      <div class="pay-head"><span>товар, ₸ (готовая сумма, без фрахта и доков)</span></div>
+      <div class="pay-row" style="grid-template-columns:1fr"><input type="number" id="f-tenge" step="1" placeholder="—"></div>
+      <div class="dist-check" id="tenge-check"></div>
 
       <h2 style="margin-top:18px">Распределение по городам</h2>
       <div id="f-dist"></div>
@@ -129,8 +133,8 @@
           </div>
         </div>
         <div class="crow"><span class="k">Количество</span><span class="v"><span id="c-pallets">32</span>п. / <span id="c-boxes">15 360</span> кг</span></div>
-        <div class="crow" id="c-row-price"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> <span id="c-price-cur">₽</span></span></div>
-        <div class="crow" id="c-row-buy"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
+        <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> ₽</span></div>
+        <div class="crow"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
         <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">2 000 000</span> ₸</span></div>
         <div class="crow"><span class="k">Доки</span><span class="v"><span id="c-doki-rub">60 000</span> ₽ → <span id="c-doki-tng">0</span> ₸</span></div>
         <div class="calc">
@@ -265,11 +269,9 @@
     $('c-pallets').textContent = nf.format(pallets);
     $('c-boxes').textContent = money(boxes*KG_PER_BOX);
     $('c-boxes2').textContent = money(boxes);
-    $('c-price').textContent = useTenge ? money(boxes?tengeDirect/(boxes*KG_PER_BOX):0) : rate(price);
-    $('c-price-cur').textContent = useTenge ? '₸' : '₽';
-    $('c-row-buy').style.display = useTenge ? 'none' : '';
+    $('c-price').textContent = rate(price);
     $('c-tovar-calc').style.display = useTenge ? 'none' : '';
-    $('c-tovar-note').textContent = useTenge ? ' (оплата тенге, с НДС)' : '';
+    $('c-tovar-note').textContent = useTenge ? ' (оплата тенге)' : '';
     $('c-cashback').textContent = rate(cashback);
     $('c-buy-gross').textContent = money(buyGross);
     $('c-buy-net').textContent = money(buyNet);
@@ -288,9 +290,16 @@
           + (buyNet>0 ? (Math.abs(diff)<=1 ? ' · сходится с закупом ✓' : ' · закуп −кэшбек: '+money(buyNet)+' ₽ (разница '+money(diff)+' ₽)') : '');
         mc.className = 'dist-check ' + ((buyNet<=0 || Math.abs(diff)<=1) ? 'ok' : 'bad');
       } else if(useTenge && mCnt>0){
-        mc.textContent='Заполнена сумма в тенге — мультикурс не используется';
+        mc.textContent='Заполнена оплата тенге — мультикурс не используется';
         mc.className='dist-check bad';
       } else { mc.textContent=''; mc.className='dist-check'; }
+    }
+    var tc=$('tenge-check');
+    if(tc){
+      tc.textContent = useTenge
+        ? ('Товар взят как есть: '+money(tengeDirect)+' ₸'+(boxes?('  ·  ~'+money(tengeDirect/(boxes*KG_PER_BOX))+' ₸/кг'):'')+'  ·  курс и кэшбек не применяются')
+        : '';
+      tc.className = 'dist-check '+(useTenge?'ok':'');
     }
     $('c-tovar').textContent = money(tovar);
     $('c-tovar2').textContent = money(tovar);
