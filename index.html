@@ -100,6 +100,7 @@
         <div><label>Паллеты</label><input type="number" id="f-pallets" value="32" min="0"></div>
         <div><label>Коробок (авто ×160)</label><input type="number" id="f-boxes" value="5120" min="0"><div class="hint">правится вручную</div></div>
         <div><label>Цена за кг, ₽</label><input type="number" id="f-price" value="100" step="0.01"></div>
+        <div><label>Товар, ₸ — оплата тенге</label><input type="number" id="f-tenge" step="1" placeholder="—"><div class="hint">готовая сумма с НДС, без фрахта. Заполнил → курс и кэшбек не нужны</div></div>
         <div><label>Кэшбек, %</label><input type="number" id="f-cashback" value="6.5" step="0.1"></div>
         <div><label>Курс товара, ₸/₽</label><input type="number" id="f-rate" value="6" step="0.01"></div>
         <div><label>Фрахт, ₸</label><input type="number" id="f-freight" value="1500000" step="1000"></div>
@@ -128,12 +129,12 @@
           </div>
         </div>
         <div class="crow"><span class="k">Количество</span><span class="v"><span id="c-pallets">32</span>п. / <span id="c-boxes">15 360</span> кг</span></div>
-        <div class="crow"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> ₽</span></div>
-        <div class="crow"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
+        <div class="crow" id="c-row-price"><span class="k">Цена за кг</span><span class="v"><span id="c-price">220</span> <span id="c-price-cur">₽</span></span></div>
+        <div class="crow" id="c-row-buy"><span class="k">Закуп <span class="m">(кэшбек <span id="c-cashback">6,5</span>%)</span></span><span class="v"><span id="c-buy-gross">0</span> → <span id="c-buy-net">0</span> ₽</span></div>
         <div class="crow"><span class="k">Фрахт</span><span class="v"><span id="c-freight">2 000 000</span> ₸</span></div>
         <div class="crow"><span class="k">Доки</span><span class="v"><span id="c-doki-rub">60 000</span> ₽ → <span id="c-doki-tng">0</span> ₸</span></div>
         <div class="calc">
-          <div><span class="lab">Товар:</span> <span id="c-tovar-rub">0</span> ₽ × <span id="c-rate">6,25</span> = <b><span id="c-tovar">0</span> ₸</b></div>
+          <div><span class="lab">Товар:</span> <span id="c-tovar-calc"><span id="c-tovar-rub">0</span> ₽ × <span id="c-rate">6,25</span> = </span><b><span id="c-tovar">0</span> ₸</b><span class="lab" id="c-tovar-note"></span></div>
           <div><span class="lab">Итого:</span> <span id="c-tovar2">0</span> + <span id="c-freight2">2 000 000</span> + <span id="c-doki2">0</span> = <b><span id="c-total">0</span> ₸</b></div>
         </div>
         <div class="sebest">
@@ -245,9 +246,12 @@
       multi.push({sum:s,rate:r});
       if(s>0 && r>0){ mSum+=s; mTng+=s*r; mCnt++; }
     });
-    var useMulti = mCnt>0;
+    // оплата тенге: готовая сумма (с НДС), без кэшбека и курса — высший приоритет
+    var tengeDirect = num('f-tenge');
+    var useTenge = tengeDirect>0;
+    var useMulti = !useTenge && mCnt>0;
     var effRate = useMulti ? (mSum?mTng/mSum:0) : rateT;
-    var tovar = useMulti ? mTng : buyNet * rateT;
+    var tovar = useTenge ? tengeDirect : (useMulti ? mTng : buyNet * rateT);
 
     var dokiTng = dokiRub * dokiRate;
     var total = tovar + freight + dokiTng;
@@ -261,7 +265,11 @@
     $('c-pallets').textContent = nf.format(pallets);
     $('c-boxes').textContent = money(boxes*KG_PER_BOX);
     $('c-boxes2').textContent = money(boxes);
-    $('c-price').textContent = rate(price);
+    $('c-price').textContent = useTenge ? money(boxes?tengeDirect/(boxes*KG_PER_BOX):0) : rate(price);
+    $('c-price-cur').textContent = useTenge ? '₸' : '₽';
+    $('c-row-buy').style.display = useTenge ? 'none' : '';
+    $('c-tovar-calc').style.display = useTenge ? 'none' : '';
+    $('c-tovar-note').textContent = useTenge ? ' (оплата тенге, с НДС)' : '';
     $('c-cashback').textContent = rate(cashback);
     $('c-buy-gross').textContent = money(buyGross);
     $('c-buy-net').textContent = money(buyNet);
@@ -279,6 +287,9 @@
         mc.textContent = 'Мультикурс: '+mCnt+' сумм · '+money(mSum)+' ₽ · ср. курс '+rate(effRate)
           + (buyNet>0 ? (Math.abs(diff)<=1 ? ' · сходится с закупом ✓' : ' · закуп −кэшбек: '+money(buyNet)+' ₽ (разница '+money(diff)+' ₽)') : '');
         mc.className = 'dist-check ' + ((buyNet<=0 || Math.abs(diff)<=1) ? 'ok' : 'bad');
+      } else if(useTenge && mCnt>0){
+        mc.textContent='Заполнена сумма в тенге — мультикурс не используется';
+        mc.className='dist-check bad';
       } else { mc.textContent=''; mc.className='dist-check'; }
     }
     $('c-tovar').textContent = money(tovar);
@@ -310,7 +321,7 @@
     chk.className='dist-check '+(okAll?'ok':'bad');
 
     LAST = { route:route, out:out, inn:inn, pallets:pallets, boxes:boxes,
-             price:price, cashback:cashback, rate:rateT, freight:freight,
+             price:price, tenge:tengeDirect, cashback:cashback, rate:rateT, freight:freight,
              doki:dokiRub, dokiRate:dokiRate, dist:distArr, multi:multi,
              sebest:Math.round(sebest), total:Math.round(total) };
     if(boxes>0){ try{ localStorage.setItem(LKEY, JSON.stringify(LAST)); }catch(e){} }
@@ -322,6 +333,7 @@
     $('f-out').value=s.out||''; $('f-in').value=s.inn||'';
     $('f-pallets').value=(s.pallets!=null?s.pallets:''); $('f-boxes').value=(s.boxes!=null?s.boxes:'');
     $('f-price').value=(s.price!=null?s.price:''); $('f-cashback').value=(s.cashback!=null?s.cashback:'');
+    $('f-tenge').value=(s.tenge?s.tenge:'');
     $('f-rate').value=(s.rate!=null?s.rate:''); $('f-freight').value=(s.freight!=null?s.freight:'');
     $('f-doki').value=(s.doki!=null?s.doki:''); $('f-doki-rate').value=(s.dokiRate!=null?s.dokiRate:'');
     buildMulti(s.multi); buildDist(s.dist); recompute();
@@ -413,7 +425,7 @@
 
   // events
   $('f-pallets').addEventListener('input', function(){ $('f-boxes').value = num('f-pallets')*BOX_PER_PALLET; recompute(); });
-  ['f-out','f-in','f-boxes','f-price','f-cashback','f-rate','f-freight','f-doki','f-doki-rate'].forEach(function(id){
+  ['f-out','f-in','f-boxes','f-price','f-tenge','f-cashback','f-rate','f-freight','f-doki','f-doki-rate'].forEach(function(id){
     $(id).addEventListener('input', recompute);
   });
   $('seg').addEventListener('click', function(e){
