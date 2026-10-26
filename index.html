@@ -167,7 +167,14 @@
     </div>
     <div id="hist-chart"></div>
     <div id="hist-list"></div>
-    <button id="hist-clear" style="margin-top:10px;height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#c0392b;cursor:pointer;font-size:13px">Очистить историю</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button id="hist-export" style="height:34px;padding:0 14px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-size:13px;font-weight:500">⬇️ Экспорт (перенос)</button>
+      <button id="hist-import" style="height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;font-size:13px">⬆️ Импорт файлом</button>
+      <button id="hist-import-txt" style="height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;font-size:13px">📋 Импорт текстом</button>
+      <button id="hist-clear" style="height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#c0392b;cursor:pointer;font-size:13px">Очистить историю</button>
+    </div>
+    <input type="file" id="hist-file" accept=".json,application/json" style="display:none">
+    <p class="hint">Меняешь телефон — на старом нажми «Экспорт», пришли файл/текст себе, на новом «Импорт».</p>
     <p class="hint">История хранится только на этом устройстве (в браузере). Никуда не отправляется.</p>
   </div>
 </div>
@@ -428,6 +435,53 @@
       editingId=id2; applyState(entry); setSaveLabel();
       if(window.scrollTo) window.scrollTo({top:0,behavior:'smooth'});
     }
+  });
+
+  function mergeHist(text){
+    var incoming;
+    try{ incoming = JSON.parse(text); }catch(e){ alert('Не похоже на данные истории. Скопируй текст целиком, вместе со скобками.'); return; }
+    if(incoming && incoming.history) incoming = incoming.history;
+    if(!Array.isArray(incoming)){ alert('Не похоже на данные истории.'); return; }
+    var cur = loadHist(), seen = {}, added = 0;
+    cur.forEach(function(x){ seen[x.id]=1; });
+    incoming.forEach(function(x){
+      if(x && x.id && !seen[x.id] && x.boxes){ cur.push(x); seen[x.id]=1; added++; }
+    });
+    saveHistArr(cur); renderHist();
+    alert('Добавлено записей: '+added+'\nВсего в истории: '+cur.length);
+  }
+
+  $('hist-export').addEventListener('click', function(){
+    var all = loadHist();
+    if(!all.length){ alert('История пуста — переносить нечего.'); return; }
+    var text = JSON.stringify({ app:'fura-calculator', exported:todayISO(), history:all });
+    try{
+      var blob = new Blob([text], {type:'application/json'});
+      var a = document.createElement('a');
+      a.download = 'fura-history-'+todayISO()+'.json';
+      a.href = URL.createObjectURL(blob); a.click();
+    }catch(e){}
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        alert('Готово: файл скачан, и текст скопирован в буфер ('+all.length+' записей).\nПришли себе любым способом и на новом телефоне нажми «Импорт».');
+      }).catch(function(){
+        alert('Файл скачан ('+all.length+' записей). Пришли его себе и на новом телефоне нажми «Импорт файлом».');
+      });
+    } else {
+      alert('Файл скачан ('+all.length+' записей). Пришли его себе и на новом телефоне нажми «Импорт файлом».');
+    }
+  });
+  $('hist-import').addEventListener('click', function(){ $('hist-file').click(); });
+  $('hist-file').addEventListener('change', function(){
+    var f = this.files && this.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){ mergeHist(String(r.result)); };
+    r.readAsText(f);
+    this.value='';
+  });
+  $('hist-import-txt').addEventListener('click', function(){
+    var t = prompt('Вставь сюда текст истории (который скопировал на старом телефоне):');
+    if(t) mergeHist(t);
   });
 
   $('hist-clear').addEventListener('click', function(){
