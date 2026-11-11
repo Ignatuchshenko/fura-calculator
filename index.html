@@ -523,8 +523,22 @@
       wrap.appendChild(clone);
       document.body.appendChild(wrap);
       var h = clone.offsetHeight;
-      htmlToImage.toBlob(clone, {pixelRatio:2, backgroundColor:'#ffffff', width:CARD_W, height:h})
-        .then(resolve, reject)
+      var opts = {pixelRatio:2, backgroundColor:'#ffffff', width:CARD_W, height:h};
+      var MIN_OK = 12000; // меньше ~12 КБ для такой карточки = снимок пустой
+      // Первый снимок у html-to-image часто выходит пустым (стили не успевают примениться),
+      // поэтому рендерим повторно и при необходимости ещё раз.
+      htmlToImage.toBlob(clone, opts)
+        .then(function(){ return htmlToImage.toBlob(clone, opts); })
+        .then(function(b){
+          if(b && b.size >= MIN_OK) return b;
+          return htmlToImage.toBlob(clone, opts).then(function(b2){
+            return (b2 && (!b || b2.size > b.size)) ? b2 : b;
+          });
+        })
+        .then(function(b){
+          if(!b || !b.size) throw new Error('пустой снимок');
+          resolve(b);
+        }, reject)
         .then(function(){ try{ document.body.removeChild(wrap); }catch(e){} },
               function(){ try{ document.body.removeChild(wrap); }catch(e){} });
     });
