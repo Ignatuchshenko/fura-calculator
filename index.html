@@ -206,13 +206,17 @@
   var GKEY = 'fura-auth';
   (function(){
     var g = document.getElementById('gate');
-    try{ if(localStorage.getItem(GKEY)===GATE_HASH){ g.style.display='none'; return; } }catch(e){}
+    // Нужен и признак входа, и сам пароль — он же ключ к общей истории.
+    // Кто входил до появления синхронизации, вводит пароль ещё один раз.
+    try{
+      if(localStorage.getItem(GKEY)===GATE_HASH && localStorage.getItem(PKEY)){ g.style.display='none'; return; }
+    }catch(e){}
     var inp = document.getElementById('gate-pass'), err = document.getElementById('gate-err');
     var GATE_SIMPLE = '7c78e81c';   // запасной отпечаток, если crypto.subtle недоступен (не-https)
     function simpleHash(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))>>>0; } return h.toString(16); }
     // пароль остаётся на устройстве — он же ключ для расшифровки общей истории
     function unlock(){
-      try{ localStorage.setItem(GKEY,GATE_HASH); localStorage.setItem('fura-pass', inp.value||''); }catch(e){}
+      try{ localStorage.setItem(GKEY,GATE_HASH); localStorage.setItem(PKEY, inp.value||''); }catch(e){}
       g.style.display='none';
       if(typeof cloudPull==='function') cloudPull().catch(function(){});
     }
@@ -502,7 +506,8 @@
       if(!r.ok) throw new Error('HTTP '+r.status);
       setCloudStatus('Сохранено в общую историю · записей: '+loadHist().length, 'ok');
     }).catch(function(e){
-      var msg = /Failed to fetch|rate/i.test(e.message||'') ? 'сервис занят, повторю позже' : e.message;
+      var msg = /нет ключа/.test(e.message||'') ? 'введи пароль заново — обнови страницу'
+              : (/Failed to fetch|rate/i.test(e.message||'') ? 'сервис занят, повторю позже' : e.message);
       setCloudStatus('Не удалось синхронизировать ('+msg+') — данные целы на устройстве', 'bad');
       setTimeout(cloudSync, 90000);
     }).then(function(){ cloudBusy=false; }, function(){ cloudBusy=false; });
