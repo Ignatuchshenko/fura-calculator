@@ -484,6 +484,9 @@
     setCloudStatus('Сохраняю в общую историю…');
     // сначала подтянуть чужие изменения, потом отправить объединённое
     return cloudPull(true).catch(function(){}).then(function(){
+      // бесплатный сервис не принимает два обращения подряд — выдерживаем паузу
+      return new Promise(function(res){ setTimeout(res, 6000); });
+    }).then(function(){
       return encryptPayload({history:loadHist(), deleted:loadDeleted(), at:Date.now()});
     }).then(function(payload){
       return fetch(CLOUD, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
