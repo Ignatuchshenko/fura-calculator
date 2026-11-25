@@ -189,6 +189,7 @@
       <button id="hist-export" style="height:34px;padding:0 14px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-size:13px;font-weight:500">⬇️ Экспорт (перенос)</button>
       <button id="hist-import" style="height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;font-size:13px">⬆️ Импорт файлом</button>
       <button id="hist-import-txt" style="height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;font-size:13px">📋 Импорт текстом</button>
+      <button id="hist-sync" style="height:34px;padding:0 14px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-size:13px;font-weight:500">☁️ Синхронизировать</button>
       <button id="hist-clear" style="height:34px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#c0392b;cursor:pointer;font-size:13px">Очистить историю</button>
     </div>
     <input type="file" id="hist-file" accept=".json,application/json" style="display:none">
@@ -472,9 +473,15 @@
       return r.json();
     }).then(decryptPayload).then(function(remote){
       if(!remote) return false;
+      var remoteCount = (remote.history||[]).length;
       var m = mergeAll(loadHist(), remote.history||[], loadDeleted(), remote.deleted||[]);
       saveHistArr(m.list); saveDeleted(m.deleted); renderHist();
       if(!silent) setCloudStatus('Синхронизировано · записей: '+m.list.length, 'ok');
+      // на устройстве есть записи, которых нет в облаке — отправить их
+      if(m.list.length > remoteCount && !cloudBusy){
+        setCloudStatus('Нашлись записи, которых нет в общей истории ('+(m.list.length-remoteCount)+') — отправляю…');
+        cloudSync();
+      }
       return true;
     });
   }
@@ -632,6 +639,11 @@
     if(t) mergeHist(t);
   });
 
+  $('hist-sync').addEventListener('click', function(){
+    clearTimeout(cloudTimer);
+    setCloudStatus('Синхронизирую…');
+    cloudPush();
+  });
   $('hist-clear').addEventListener('click', function(){
     if(confirm('Удалить всю историю фур на этом устройстве?')){ editingId=null; setSaveLabel(); saveHistArr([]); renderHist(); }
   });
