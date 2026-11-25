@@ -492,10 +492,18 @@
       if(!r.ok) throw new Error('HTTP '+r.status);
       setCloudStatus('Сохранено в общую историю · записей: '+loadHist().length, 'ok');
     }).catch(function(e){
-      setCloudStatus('Не удалось синхронизировать ('+e.message+') — данные целы на устройстве', 'bad');
+      var msg = /Failed to fetch|rate/i.test(e.message||'') ? 'сервис занят, повторю позже' : e.message;
+      setCloudStatus('Не удалось синхронизировать ('+msg+') — данные целы на устройстве', 'bad');
+      setTimeout(cloudSync, 90000);
     }).then(function(){ cloudBusy=false; }, function(){ cloudBusy=false; });
   }
-  function cloudSync(){ clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 1500); }
+  function cloudSync(){ clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 3000); }
+  var lastPull = 0;
+  function cloudPullThrottled(){           // бесплатный сервис ограничивает частоту — не дёргаем часто
+    if(Date.now()-lastPull < 300000) return Promise.resolve(false);
+    lastPull = Date.now();
+    return cloudPull(true).catch(function(){ return false; });
+  }
 
   function chartSVG(es){
     if(es.length<1) return '';
@@ -767,7 +775,7 @@
     setCloudStatus('Общая история недоступна — работаю с копией на устройстве','bad');
   });
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState==='visible' && !cloudBusy) cloudPull(true).catch(function(){});
+    if(document.visibilityState==='visible' && !cloudBusy) cloudPullThrottled();
   });
 </script>
 </body>
