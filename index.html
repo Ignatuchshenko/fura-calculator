@@ -44,6 +44,13 @@
   .dist-check{font-size:12px;margin-top:6px}
   .ok{color:var(--accent)} .bad{color:#c0392b}
   .hint{font-size:11px;color:var(--faint);margin-top:3px}
+  #gate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+  .gate-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:28px 24px;max-width:320px;width:100%;text-align:center}
+  .gate-box h3{font-size:17px;font-weight:600;margin:10px 0 2px}
+  .gate-box p{font-size:13px;color:var(--muted);margin:0}
+  .gate-box input{text-align:center;font-size:18px;letter-spacing:.15em;margin:16px 0 10px}
+  .gate-box button{width:100%;height:44px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+  #gate-err{color:#c0392b;font-size:12px;margin-top:10px;min-height:16px}
   .btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
   .btns button{flex:1 1 30%;height:42px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:14px;font-weight:500;color:var(--ink)}
   .btns .primary{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -80,6 +87,16 @@
 </style>
 </head>
 <body>
+<div id="gate">
+  <div class="gate-box">
+    <div style="font-size:34px">🚚</div>
+    <h3>Калькулятор фуры</h3>
+    <p>Доступ по паролю</p>
+    <input type="password" id="gate-pass" inputmode="numeric" autocomplete="current-password" placeholder="пароль">
+    <button id="gate-btn">Войти</button>
+    <div id="gate-err"></div>
+  </div>
+</div>
 <div class="wrap">
   <h1>Калькулятор себестоимости фуры</h1>
   <p class="sub">Грибы · импорт из Воронежа. Вбей вводные — получишь себестоимость/коробку и картинку.</p>
@@ -181,6 +198,34 @@
 
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script>
+  // Экран входа. Пароль не хранится в коде — только его отпечаток (SHA-256).
+  // Введённый один раз пароль запоминается на этом устройстве.
+  var GATE_HASH = '1bc3201a9f24a2fe48f634f90d406aaf6cbf5e36e292870ecba98d74b065ee1b';
+  var GKEY = 'fura-auth';
+  (function(){
+    var g = document.getElementById('gate');
+    try{ if(localStorage.getItem(GKEY)===GATE_HASH){ g.style.display='none'; return; } }catch(e){}
+    var inp = document.getElementById('gate-pass'), err = document.getElementById('gate-err');
+    var GATE_SIMPLE = '7c78e81c';   // запасной отпечаток, если crypto.subtle недоступен (не-https)
+    function simpleHash(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))>>>0; } return h.toString(16); }
+    function unlock(){ try{ localStorage.setItem(GKEY,GATE_HASH); }catch(e){} g.style.display='none'; }
+    function deny(){ err.textContent='Неверный пароль'; inp.value=''; try{ inp.focus(); }catch(e){} }
+    function check(){
+      var v = inp.value || '';
+      if(window.crypto && crypto.subtle && window.TextEncoder){
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)).then(function(buf){
+          var h = Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('0'+b.toString(16)).slice(-2); }).join('');
+          if(h===GATE_HASH) unlock(); else deny();
+        }, function(){ if(simpleHash(v)===GATE_SIMPLE) unlock(); else deny(); });
+      } else {
+        if(simpleHash(v)===GATE_SIMPLE) unlock(); else deny();
+      }
+    }
+    document.getElementById('gate-btn').addEventListener('click', check);
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') check(); });
+    setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 150);
+  })();
+
   var BOX_PER_PALLET = 160, KG_PER_BOX = 3;
   var ROUTES = {
     almaty: { label:'на Алмату', dest:'Алмата', cities:[['Актобе',3,1],['Шымкент',8,1],['Алмата',21,1],['Астана',0,0],['Караганда',0,0]] },
