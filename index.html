@@ -553,27 +553,51 @@
   // (Android отзывает разрешение на «Поделиться», если между нажатием и вызовом прошло время).
   var shareCache=null, warmTimer=null;
   function cardKey(){ try{ return JSON.stringify(LAST); }catch(e){ return String(Date.now()); } }
+  var sharing = false;
   function warmShare(){
     if(!window.htmlToImage) return;
     clearTimeout(warmTimer);
     warmTimer = setTimeout(function(){
+      // Пока открыто системное окно отправки (или вкладка не на экране) — не рендерим:
+      // фоновый рендер пересоздаёт окно, и оно схлопывается (Fold в раскрытом виде).
+      if(sharing || document.visibilityState!=='visible'){ warmShare(); return; }
       var key = cardKey();
       buildCardBlob().then(function(b){ shareCache={blob:b, key:key}; }).catch(function(){});
     }, 1200);
+  }
+  function copyImage(blob){
+    if(navigator.clipboard && window.ClipboardItem){
+      navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(function(){
+        alert('Картинка скопирована.\nОткрой WhatsApp, нажми и подержи поле ввода → «Вставить».');
+      }, function(){
+        downloadBlob(blob,'nakladnaya.png');
+        alert('Картинка сохранена в «Загрузки» — отправь её оттуда.');
+      });
+    } else {
+      downloadBlob(blob,'nakladnaya.png');
+      alert('Картинка сохранена в «Загрузки» — отправь её оттуда.');
+    }
   }
   function doShare(blob){
     var file = new File([blob],'nakladnaya.png',{type:'image/png'});
     // ВАЖНО: только files, без title/text — иначе Android не подбирает получателей
     // (share sheet показывает «Рекомендованных получателей нет» и превью мигает).
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      navigator.share({files:[file]}).catch(function(err){
-        if(err && (err.name==='AbortError')) return;
-        downloadBlob(blob,'prihodnaya-nakladnaya.png');
-        alert('Телефон не дал открыть меню отправки — картинка сохранена в «Загрузки», отправь её оттуда.');
-      });
-    } else {
-      downloadBlob(blob,'prihodnaya-nakladnaya.png');
-    }
+    if(!(navigator.canShare && navigator.canShare({files:[file]}))){ copyImage(blob); return; }
+    clearTimeout(warmTimer);        // фоновый рендер не должен схлопнуть окно отправки
+    sharing = true;
+    var attempt = function(n){
+      var t0 = Date.now();
+      navigator.share({files:[new File([blob],'nakladnaya.png',{type:'image/png'})]})
+        .then(function(){ sharing=false; }, function(err){
+          var quick = (Date.now()-t0) < 1200;        // так быстро человек закрыть не успевает
+          var aborted = err && err.name==='AbortError';
+          if(aborted && !quick){ sharing=false; return; }   // закрыл сам — всё в порядке
+          if(n < 2){ setTimeout(function(){ attempt(n+1); }, 400); return; }  // система отменила — ещё раз
+          sharing=false;
+          copyImage(blob);
+        });
+    };
+    attempt(1);
   }
 
   $('btn-png').addEventListener('click', function(){
