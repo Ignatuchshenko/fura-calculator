@@ -204,6 +204,7 @@
   // Введённый один раз пароль запоминается на этом устройстве.
   var GATE_HASH = '1bc3201a9f24a2fe48f634f90d406aaf6cbf5e36e292870ecba98d74b065ee1b';
   var GKEY = 'fura-auth';
+  var PKEY = 'fura-pass';   // объявлено здесь: нужно экрану входа, который идёт ниже
   (function(){
     var g = document.getElementById('gate');
     // Нужен и признак входа, и сам пароль — он же ключ к общей истории.
@@ -249,7 +250,6 @@
   var HKEY = 'fura-history-v1';
   var LKEY = 'fura-last-input-v1';
   var DKEY = 'fura-deleted-v1';
-  var PKEY = 'fura-pass';
   var $ = function(id){ return document.getElementById(id); };
   var nf = new Intl.NumberFormat('ru-RU');
   var rf = new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2});
